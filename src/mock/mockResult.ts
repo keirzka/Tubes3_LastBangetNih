@@ -1,7 +1,7 @@
 // src/mock/mockResults.ts
 // HAPUS file ini saat integrasi dengan algoritma utama
 
-import { MatchResult, ScanStats, Algorithm } from '../types';
+import type { MatchResult, ScanStats, Algorithm } from '../types';
 
 export function getMockResults(): MatchResult[] {
   return [

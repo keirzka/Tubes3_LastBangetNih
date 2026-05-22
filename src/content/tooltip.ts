@@ -1,6 +1,6 @@
 // src/content/tooltip.ts
 
-import { MatchResult } from '../types';
+import type { MatchResult } from '../types';
 
 // Tooltip adalah elemen tunggal yang berpindah-pindah, bukan dibuat per highlight
 let tooltipEl: HTMLElement | null = null;

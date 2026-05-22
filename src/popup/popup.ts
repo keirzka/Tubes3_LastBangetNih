@@ -1,9 +1,9 @@
 // src/popup/popup.ts
 
-import { ScanStats, ContentMessage } from '../types';
+import type { ScanStats, ContentMessage } from '../types';
+import '../styles/popup.css';
 
 declare const chrome: any;
-let tooltipEl: HTMLElement | null = null;
 
 /**
  * Kirim perintah scan ke content script yang sedang aktif di tab ini.

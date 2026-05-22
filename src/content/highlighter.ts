@@ -1,6 +1,6 @@
 // src/content/highlighter.ts
 
-import { MatchResult } from '../types';
+import type { MatchResult } from '../types';
 import {showTooltip, hideTooltip} from './tooltip';
 
 // Nama class ini dipakai untuk cleanup — jangan ganti sembarangan
@@ -41,7 +41,7 @@ export function highlightTextNode(
     // node : teks sebelum bagian split, after : teks keyword + setelahnya
     const after = node.splitText(start);
     // after : teks keyword, sisa : teks sesudah keyword
-    const sisa = after.splitText(keyLen);
+    after.splitText(keyLen);
     // buat mark
     const mark = createHighlightElement(keyword, result);
     // tambahkan teks setelah keyword
