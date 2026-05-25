@@ -1,8 +1,10 @@
+// src/algorithms/searchAlgorithm.ts
 import { MatchResult, ScanStats, Algorithm } from '../types';
 import { loadKeywords } from '../content/keywordLoader';
 import { kmpSearch } from './kmp';
 import { bmSearch } from './bm';
 import { regexSearch } from './regex';
+import { fuzzySearch, THRESHOLD } from './weightedLevenshtein';
 
 export async function searchAlgorithm(text: string): Promise<ScanStats> {
     const keywords = await loadKeywords();    
@@ -15,7 +17,7 @@ export async function searchAlgorithm(text: string): Promise<ScanStats> {
     const executionByAlgorithm: Record<Algorithm, number> = {
         KMP: 0, BoyerMoore: 0, RegEx: 0, Fuzzy: 0,
     };
-    const keywordsWithNoExactMatch: string[] = [];   //simpan kandidat fuzzy
+    const keywordsWithNoExactMatch: string[] = [];
 
     // Exact Matching untuk setiap pattern di keywords.txt
     for (const keyword of keywords) {
@@ -38,6 +40,7 @@ export async function searchAlgorithm(text: string): Promise<ScanStats> {
                 isFuzzy: false,
             });
         }
+
         byAlgorithm['KMP'] += kmpResult.positions.length;
         executionByAlgorithm['KMP'] += kmpTime;
 
@@ -57,18 +60,60 @@ export async function searchAlgorithm(text: string): Promise<ScanStats> {
 
     for (const r of regexResult) {
         results.push({
-        keyword: r.matched,
-        algorithm: 'RegEx',
-        count: 1,
-        positions: [r.index],
-        executionTime: regexTime,
-        isFuzzy: false,
+            keyword: r.matched,
+            algorithm: 'RegEx',
+            count: 1,
+            positions: [r.index],
+            executionTime: regexTime,
+            isFuzzy: false,
         });
         byAlgorithm['RegEx'] += 1;
     }
     executionByAlgorithm['RegEx'] += regexTime;
 
-    // TODO: Fuzzy matching 
+    // Fuzzy matching
+    if (keywordsWithNoExactMatch.length > 0) {
+        const fuzzyStart = performance.now();
+        const fuzzyMatches = fuzzySearch(normalizedText, keywordsWithNoExactMatch);
+        const fuzzyTime = performance.now() - fuzzyStart;
+
+        const fuzzyGrouped = new Map<string, { positions: number[]; similarity: number; token: string }>();
+
+        for (const fm of fuzzyMatches) {
+            if (!fuzzyGrouped.has(fm.keyword)) {
+                fuzzyGrouped.set(fm.keyword, {
+                    positions: [],
+                    similarity: fm.similarity,
+                    token: fm.token,
+                });
+            }
+            fuzzyGrouped.get(fm.keyword)!.positions.push(fm.index);
+            if (fm.similarity > fuzzyGrouped.get(fm.keyword)!.similarity) {
+                fuzzyGrouped.get(fm.keyword)!.similarity = fm.similarity;
+                fuzzyGrouped.get(fm.keyword)!.token = fm.token;
+            }
+        }
+
+        for (const [keyword, data] of fuzzyGrouped) {
+            const alreadyExact = results.some(
+                r => r.keyword === keyword && !r.isFuzzy
+            );
+            if (alreadyExact) continue;
+
+            results.push({
+                keyword,
+                algorithm: 'Fuzzy',
+                count: data.positions.length,
+                positions: data.positions,
+                executionTime: fuzzyTime,
+                isFuzzy: true,
+                similarity: data.similarity,
+            });
+            byAlgorithm['Fuzzy'] += data.positions.length;
+        }
+
+        executionByAlgorithm['Fuzzy'] += fuzzyTime;
+    }
 
     return {
         totalMatches: results.reduce((sum, r) => sum + r.count, 0),
