@@ -1,6 +1,6 @@
 // Pre-process array supaya tau jumlah karakter untuk diskip pada KMP
 // lps[i] adalah longest proper prefix of pat[0..i] yang juga suffix of pat[0..i]
-export function buildLps(pat: string): number[] {
+function buildLps(pat: string): number[] {
     const lps = new Array(pat.length).fill(0);  //inisiasi lps
 
     let len_checked = 0; 
@@ -29,6 +29,7 @@ export function kmpSearch(text: string, patt: string): { positions: number[]; co
     let comparisons = 0;
 
     if (patt.length === 0) return { positions, comparisons };
+    if (patt.length > text.length) return { positions, comparisons };
 
     // Build lps
     const lps = buildLps(patt);
@@ -37,6 +38,8 @@ export function kmpSearch(text: string, patt: string): { positions: number[]; co
     let it_patt = 0;
 
     while (it_text<text.length){  //iterasi text
+        comparisons++;
+
         if (patt[it_patt] === text[it_text]){
             it_patt++;
             it_text++;
@@ -47,14 +50,12 @@ export function kmpSearch(text: string, patt: string): { positions: number[]; co
             }
         } 
         else {
-            if (it_patt == 0){  
+            if (it_patt === 0){  
                 it_text++;  
             } else {  //missmatch setelah proses, cari longest prefix match pada it_patt-1 untuk mulai dari situ 
                 it_patt = lps[it_patt-1];
             }
         }
-
-        comparisons++;
     }
 
     return { positions, comparisons };
