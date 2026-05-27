@@ -1,0 +1,42 @@
+<!-- public/popup.html -->
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Judol Detector</title>
+  <link rel="stylesheet" href="popup.css">
+  <!-- Lebar popup Chrome biasanya 300–400px, desain untuk lebar itu -->
+</head>
+<body>
+  <div id="app">
+    <header>
+      <h1>Judol Detector</h1>
+      <button id="scan-btn">Scan Page</button>
+      <button id="clear-btn">Clear</button>
+    </header>
+
+    <!-- Statistik total -->
+    <section id="stats">
+      <div id="total-count">No Match Found</div>
+    </section>
+
+    <!-- Visualisasi perbandingan antar algoritma -->
+    <!-- Ini bisa bar chart sederhana pakai CSS width, atau canvas -->
+    <section id="chart-section">
+      <h2>Perbandingan algoritma</h2>
+      <div id="chart-container">
+        <!-- TODO: isi ini dari popup.ts secara dinamis -->
+      </div>
+    </section>
+
+    <!-- Waktu eksekusi -->
+    <section id="timing-section">
+      <h2>Execution Time</h2>
+      <div id="timing-container">
+        <!-- TODO: isi ini dari popup.ts secara dinamis -->
+      </div>
+    </section>
+  </div>
+  <script type="module" src="../src/popup/popup.ts"></script>
+</body>
+</html>

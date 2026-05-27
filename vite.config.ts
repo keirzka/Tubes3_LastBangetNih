@@ -1,21 +1,21 @@
+// vite.config.ts
 import { defineConfig } from 'vite';
 import { resolve } from 'path';
 
 export default defineConfig({
   build: {
-    outDir: 'dist',
-    emptyOutDir: true,
     rollupOptions: {
       input: {
-        content: resolve(__dirname, 'src/content/index.ts'),
-        popup: resolve(__dirname, 'src/popup/index.ts'),
+        popup: resolve(__dirname, 'public/popup.html'),
+        content: resolve(__dirname, 'src/content/content.ts'),
       },
       output: {
         entryFileNames: '[name].js',
+        assetFileNames: '[name].[ext]', 
         chunkFileNames: '[name].js',
-        assetFileNames: '[name].[ext]',
       },
     },
+    outDir: 'dist',
+    emptyOutDir: true,
   },
-  publicDir: 'public',
 });
