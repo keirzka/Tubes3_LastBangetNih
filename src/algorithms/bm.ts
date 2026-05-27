@@ -1,11 +1,5 @@
-function buildLastOccurrence(pattern: string, text: string): Map<string, number> {
+function buildLastOccurrence(pattern: string): Map<string, number> {
     const table = new Map<string, number>();
-
-    // Inisiasi untuk semua karakter di text = -1
-    for (let i = 0; i < text.length; i++) {
-        table.set(text[i], -1); 
-    }
-    // Yang ada di pattern baru akan diisi nilai yang sesuai
     for (let i = 0; i < pattern.length; i++) {
         table.set(pattern[i], i); 
     }
@@ -21,7 +15,7 @@ export function bmSearch(text: string, pattern: string): { positions: number[]; 
     if (pattern.length > text.length) return { positions, comparisons };
 
     // Build tabel LastOccur
-    const lastOcc = buildLastOccurrence(pattern, text);
+    const lastOcc = buildLastOccurrence(pattern);
 
     // Selalu mulai dari karakter paling belakang pattern
     let it_text = pattern.length-1;
@@ -43,10 +37,8 @@ export function bmSearch(text: string, pattern: string): { positions: number[]; 
             }
         } else { //missmatch
             let x = text[it_text];
-            let lo = lastOcc.get(x);
+            let lo = lastOcc.get(x) ?? -1;  //undefined -> -1
 
-            if (lo == undefined) throw new Error("Something wrong");  //harusnya tdk possible karna seluruh karakter 
-                                                                      //pada text udah didaftarkan pada tabel
             let d;
             // Case tidak ada x
             if (lo === -1) { 
