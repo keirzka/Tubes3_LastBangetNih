@@ -1,4 +1,3 @@
-import '../styles/tooltip.css';
 import { initTooltip } from './tooltip';
 import { clearAllHighlights } from './highlighter';
 import { collectTextNodes, applyHighlights } from './scanner';

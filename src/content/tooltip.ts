@@ -6,6 +6,42 @@ let tooltipEl: HTMLElement | null = null;
 // Inisialisasi tooltip : panggil sekali saat content script load
 
 export function initTooltip(): void {
+  const style = document.createElement('style');
+  style.textContent = `
+    #judol-tooltip{
+      position: fixed;
+      z-index: 999999;
+      pointer-events: none;
+      background-color: #3f3a42;
+      color: #f5e6eb;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-family: sans-serif;
+      box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.5), 0 2px 4px -2px rgb(0 0 0 / 0.3);
+      border: 1px solid #db2777;
+      display: none;
+    }
+
+    #judol-tooltip h3{
+        margin: 0 0 4px;
+        color: #f472b6;
+        font-weight: bold;
+        font-size: 14px;
+    }
+
+    .judol-blur {
+      filter: blur(6px);
+      transition: filter 0.3s ease;
+      cursor: pointer;
+    }
+
+    .judol-blur:hover {
+      filter: blur(0px);
+    } 
+    `;
+
+  document.head.appendChild(style);
     tooltipEl = document.createElement('div');
     tooltipEl.id = 'judol-tooltip';
     // masukkan ke halaman web
