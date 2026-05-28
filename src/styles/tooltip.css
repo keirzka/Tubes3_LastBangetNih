@@ -25,7 +25,3 @@
   transition: filter 0.3s ease;
   cursor: pointer;
 }
-
-.judol-blur:hover {
-  filter: blur(0px);
-}

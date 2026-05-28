@@ -2,9 +2,6 @@ import type { MatchResult } from '../types';
 
 let tooltipEl: HTMLElement | null = null;
 
-
-// Inisialisasi tooltip : panggil sekali saat content script load
-
 export function initTooltip(): void {
   const style = document.createElement('style');
   style.textContent = `
@@ -36,9 +33,7 @@ export function initTooltip(): void {
       cursor: pointer;
     }
 
-    .judol-blur:hover {
-      filter: blur(0px);
-    } 
+
     `;
 
   document.head.appendChild(style);
@@ -47,9 +42,6 @@ export function initTooltip(): void {
     // masukkan ke halaman web
     document.body.appendChild(tooltipEl);
 }
-
-
-// Tampilkan tooltip saat hover keyword yang dihighlight
 
 export function showTooltip(event: MouseEvent, result: MatchResult): void {
   if (!tooltipEl) return;
@@ -99,9 +91,9 @@ export function showTooltip(event: MouseEvent, result: MatchResult): void {
     }
 
     // set posisi tooltip
-    const offset = 12; // Jarak aman agar kotak tooltip tidak tertutup tepat di bawah kursor
-    const tooltipWidth = 200; // lebar tooltip
-    const tooltipHeight = 120; // tinggi tooltip
+    const offset = 12; 
+    const tooltipWidth = 200; 
+    const tooltipHeight = 120;
 
     const left = event.clientX + offset + tooltipWidth > window.innerWidth
       ? event.clientX - tooltipWidth - offset 
@@ -114,7 +106,7 @@ export function showTooltip(event: MouseEvent, result: MatchResult): void {
     tooltipEl.style.left = `${left}px`;
     tooltipEl.style.top = `${top}px`;
 
-    // tampilkan ke layar
+    // tampilin ke layar
     tooltipEl.style.display = 'block';
 }
 

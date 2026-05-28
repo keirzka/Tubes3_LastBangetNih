@@ -4,8 +4,6 @@ import { applyBlurToElement } from './blurCensor';
 
 declare const chrome: any;
 
-// Scan semua text node dari DOM, return array text node untuk highlight dan teks gabungan seluruh page untuk algoritma matching
-
 export function collectTextNodes(): { textNodes: Text[]; fullText: string; nodeOffsets: number[] } {
   const textNodes: Text[] = [];
   const nodeOffsets: number[] = [];
@@ -19,17 +17,14 @@ export function collectTextNodes(): { textNodes: Text[]; fullText: string; nodeO
         const parent = node.parentNode as HTMLElement;
         const tag = parent?.nodeName;
 
-        // Jangan scan konten dari tag-tag ini
         if (tag === 'SCRIPT' || tag === 'STYLE' || tag === 'NOSCRIPT') {
           return NodeFilter.FILTER_REJECT;
         }
 
-        // Jangan scan elemen milik extension kita sendiri
         if (parent?.id === 'judol-tooltip' || parent?.classList?.contains('judol-highlight')) {
           return NodeFilter.FILTER_REJECT;
         }
 
-        // Lewati text node yang hanya berisi whitespace
         if (!node.textContent?.trim()) {
           return NodeFilter.FILTER_SKIP;
         }
@@ -42,7 +37,7 @@ export function collectTextNodes(): { textNodes: Text[]; fullText: string; nodeO
   let current = walker.nextNode();
   while (current) {
     const node = current as Text;
-    nodeOffsets.push(fullText.length); // catat di mana node ini mulai dalam fullText
+    nodeOffsets.push(fullText.length);
     fullText += node.textContent ?? '';
     textNodes.push(node);
     current = walker.nextNode();
@@ -50,9 +45,6 @@ export function collectTextNodes(): { textNodes: Text[]; fullText: string; nodeO
 
   return { textNodes, fullText, nodeOffsets };
 }
-
-
-// Memetakan setiap posisi match ke text node yang tepat untuk highlight
 
 export async function applyHighlights(
   stats: ScanStats,
@@ -63,60 +55,67 @@ export async function applyHighlights(
   const storage = await chrome.storage.local.get('blurEnabled');
   const isBlurEnabled = !!storage.blurEnabled;
 
-  stats.results.forEach((res) => {
-    // simpan semua posisi node untuk keyword ini
-    const positionsPerNode = new Map<number, number[]>();
+  function highlightResults(
+    resArray: typeof stats.results,
+    nodes: Text[],
+    offsets: number[],
+    text: string
+  ): void {
+    resArray.forEach((res) => {
+      const positionsPerNode = new Map<number, number[]>();
 
-    res.positions.forEach((pos) => {
-      // Validasi: posisi tidak boleh melebihi panjang teks
-      if (pos < 0 || pos >= fullText.length) return;
+      res.positions.forEach((pos) => {
+        if (pos < 0 || pos >= text.length) return;
 
-      // Cari node mana yang mengandung posisi ini
-      let targetIdx = -1;
-      for (let i = 0; i < nodeOffsets.length; i++) {
-        const start = nodeOffsets[i];
-        const end = i + 1 < nodeOffsets.length ? nodeOffsets[i + 1] : fullText.length;
-
-        if (pos >= start && pos < end) {
-          targetIdx = i;
-          break;
+        let targetIdx = -1;
+        for (let i = 0; i < offsets.length; i++) {
+          const start = offsets[i];
+          const end = i + 1 < offsets.length ? offsets[i + 1] : text.length;
+          if (pos >= start && pos < end) { targetIdx = i; break; }
         }
-      }
+        if (targetIdx === -1) return;
 
-      if (targetIdx === -1) return;
+        const localPos = pos - offsets[targetIdx];
+        const nodeText = nodes[targetIdx].textContent ?? '';
+        if (localPos + res.keyword.length > nodeText.length) return;
 
-      // Hitung posisi lokal dalam node ini
-      const localPos = pos - nodeOffsets[targetIdx];
+        if (!positionsPerNode.has(targetIdx)) positionsPerNode.set(targetIdx, []);
+        positionsPerNode.get(targetIdx)!.push(localPos);
+      });
 
-      // Pastikan keyword tidak melewati batas node
-      // (kasus edge: keyword terpotong antar dua text node)
-      const nodeText = textNodes[targetIdx].textContent ?? '';
-      if (localPos + res.keyword.length > nodeText.length) return;
-
-      // Kumpulkan per node
-      if (!positionsPerNode.has(targetIdx)) {
-        positionsPerNode.set(targetIdx, []);
-      }
-      positionsPerNode.get(targetIdx)!.push(localPos);
-    });
-
-    // Sekarang highlight per node
-    positionsPerNode.forEach((localPositions, nodeIdx) => {
-      highlightTextNode(textNodes[nodeIdx], res.keyword, res, localPositions);
-          
-      // Blur teks
-      if (isBlurEnabled) {
-        const parentEl = textNodes[nodeIdx].parentElement;
-        if (parentEl) {
-          applyBlurToElement(parentEl);
+      positionsPerNode.forEach((localPositions, nodeIdx) => {
+        highlightTextNode(nodes[nodeIdx], res.keyword, res, localPositions);
+        if (isBlurEnabled) {
+          const parentEl = nodes[nodeIdx].parentElement;
+          if (parentEl) applyBlurToElement(parentEl);
         }
-      }
+      });
     });
-  });
+  }
+
+  const exactResults = stats.results.filter(r => !r.isFuzzy);
+  highlightResults(exactResults, textNodes, nodeOffsets, fullText);
+
+  const fuzzyResults = stats.results.filter(r => r.isFuzzy);
+  if (fuzzyResults.length > 0) {
+    const { textNodes: newNodes, fullText: newText, nodeOffsets: newOffsets } = collectTextNodes();
+    const newTextLower = newText.toLowerCase();
+
+    const fuzzyWithNewPositions = fuzzyResults.map(res => {
+      const newPositions: number[] = [];
+      let searchFrom = 0;
+      while (true) {
+        const idx = newTextLower.indexOf(res.keyword, searchFrom);
+        if (idx === -1) break;
+        newPositions.push(idx);
+        searchFrom = idx + 1;
+      }
+      return { ...res, positions: newPositions };
+    }).filter(res => res.positions.length > 0);
+
+    highlightResults(fuzzyWithNewPositions, newNodes, newOffsets, newText);
+  }
 }
-
-
-// Getter untuk fullTextn untuk passing full text ke algoritma
 
 export function getFullPageText(): { textNodes: Text[]; fullText: string; nodeOffsets: number[] } {
   return collectTextNodes();

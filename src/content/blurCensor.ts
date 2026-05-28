@@ -14,7 +14,6 @@ export function clearAllBlurs(): void {
 }
 
 export function setBlurEnabled(enabled: boolean): void {
-  // Simpan state ke storage agar persisten
   chrome.storage.local.set({ blurEnabled: enabled });
   if (!enabled) clearAllBlurs();
 }

@@ -42,6 +42,8 @@ export async function searchAlgorithm(text: string): Promise<ScanStats> {
         }
 
         if (kmpResult.positions.length > 0) {
+            console.log(`[KMP] "${keyword}" → ${kmpResult.positions.length} match`);
+            console.log(`[BM]  "${keyword}" → ${bmResult.positions.length} match`);
             results.push({
                 keyword,
                 count: kmpResult.positions.length,
@@ -61,7 +63,9 @@ export async function searchAlgorithm(text: string): Promise<ScanStats> {
     const acTime = performance.now() - acStart;
 
     for (const keyword of keywords) {
-        byAlgorithm['AhoCorasick'] += acResults.get(keyword)!.positions.length;
+        const acCount = acResults.get(keyword)!.positions.length;
+        byAlgorithm['AhoCorasick'] += acCount;
+        if (acCount > 0) console.log(`[AC]  "${keyword}" → ${acCount} match`);
     }
     executionByAlgorithm['AhoCorasick'] += acTime;
 
@@ -78,6 +82,7 @@ export async function searchAlgorithm(text: string): Promise<ScanStats> {
         byAlgorithm['RabinKarp'] += rkResult.positions.length;
         executionByAlgorithm['RabinKarp'] += rkTime;
         result.executionTimes.RabinKarp = rkTime;
+        if (rkResult.positions.length > 0) console.log(`[RK]  "${result.keyword}" → ${rkResult.positions.length} match`);
     }
 
     // Regex matching 
@@ -86,6 +91,7 @@ export async function searchAlgorithm(text: string): Promise<ScanStats> {
     const regexTime = performance.now() - regexStart;
 
     for (const r of regexResult) {
+        console.log(`[RegEx] "${r.matched}" → pos: ${r.index}`);
         results.push({
             keyword: r.matched,
             count: 1,
@@ -124,15 +130,31 @@ export async function searchAlgorithm(text: string): Promise<ScanStats> {
             const alreadyExact = results.some(r => r.keyword === keyword && !r.isFuzzy);
             if (alreadyExact) continue;
 
+            const token = data.token;
+            const tokenPositions: number[] = [];
+            let searchFrom = 0;
+            while (true) {
+                const idx = normalizedText.indexOf(token, searchFrom);
+                if (idx === -1) break;
+                tokenPositions.push(idx);
+                searchFrom = idx + 1;
+            }
+
+            console.log();
+
+            if (tokenPositions.length === 0) continue;
+
+            console.log(`[Fuzzy] "${keyword}" <- token:"${token}" sim:${data.similarity.toFixed(3)} pos:[${tokenPositions}]`);
+
             results.push({
-                keyword,
-                count: data.positions.length,
-                positions: data.positions,
+                keyword: token,
+                count: tokenPositions.length,
+                positions: tokenPositions,
                 isFuzzy: true,
                 similarity: data.similarity,
                 executionTimes: { Fuzzy: fuzzyTime },
             });
-            byAlgorithm['Fuzzy'] += data.positions.length;
+            byAlgorithm['Fuzzy'] += tokenPositions.length;
         }
 
         executionByAlgorithm['Fuzzy'] += fuzzyTime;

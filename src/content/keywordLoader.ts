@@ -3,13 +3,13 @@ declare const chrome: {
       getURL: (path: string) => string;
   };
 };
-// Ubah keywords.txt jadi list of string
+// ubah keywords.txt jd list of string
 export async function loadKeywords(): Promise<string[]> {
   try{
     const url = chrome.runtime.getURL('keywords.txt'); 
     const res = await fetch(url);
 
-    // Validasi jika file tidak ditemukan atau gagal fetch
+    // validasi kalau file ga nemu atau gagal fetch
     if (!res.ok) {
       throw new Error(`HTTP error! status: ${res.status}`);
     }
