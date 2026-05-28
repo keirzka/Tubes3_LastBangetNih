@@ -19,3 +19,13 @@
     font-weight: bold;
     font-size: 14px;
 }
+
+.judol-blur {
+  filter: blur(6px);
+  transition: filter 0.3s ease;
+  cursor: pointer;
+}
+
+.judol-blur:hover {
+  filter: blur(0px);
+}

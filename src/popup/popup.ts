@@ -177,3 +177,28 @@ document.getElementById('clear-btn')?.addEventListener('click', async () => {
 
     await chrome.storage.session.remove('lastStats');
 });
+
+// Event listener Togel Blur
+const blurToggle = document.getElementById('blur-toggle') as HTMLInputElement;
+
+if (blurToggle) {
+  // Load state saat popup dibuka menggunakan async/await agar seragam
+  (async () => {
+    const res = await chrome.storage.local.get('blurEnabled');
+    blurToggle.checked = res.blurEnabled !== undefined ? res.blurEnabled : false;
+  })();
+
+  // Listener ketika toggle digeser
+  blurToggle.addEventListener('change', async () => {
+    const enabled = blurToggle.checked;
+    
+    // Simpan status terbaru ke storage lokal
+    await chrome.storage.local.set({ blurEnabled: enabled });
+    
+    // Kirim pesan ke content script di tab aktif agar langsung mem-blur / menghapus blur saat itu juga
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (tab?.id) {
+      chrome.tabs.sendMessage(tab.id, { type: 'SET_BLUR', blurEnabled: enabled });
+    }
+  });
+}

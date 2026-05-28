@@ -1,8 +1,8 @@
-// src/content/scanner.ts
-
 import type { ScanStats } from '../types';
 import { highlightTextNode } from './highlighter';
+import { applyBlurToElement } from './blurCensor';
 
+declare const chrome: any;
 
 // Scan semua text node dari DOM, return array text node untuk highlight dan teks gabungan seluruh page untuk algoritma matching
 
@@ -54,12 +54,15 @@ export function collectTextNodes(): { textNodes: Text[]; fullText: string; nodeO
 
 // Memetakan setiap posisi match ke text node yang tepat untuk highlight
 
-export function applyHighlights(
+export async function applyHighlights(
   stats: ScanStats,
   textNodes: Text[],
   nodeOffsets: number[],
   fullText: string
-): void {
+): Promise<void> {
+  const storage = await chrome.storage.local.get('blurEnabled');
+  const isBlurEnabled = !!storage.blurEnabled;
+
   stats.results.forEach((res) => {
     // simpan semua posisi node untuk keyword ini
     const positionsPerNode = new Map<number, number[]>();
@@ -100,6 +103,14 @@ export function applyHighlights(
     // Sekarang highlight per node
     positionsPerNode.forEach((localPositions, nodeIdx) => {
       highlightTextNode(textNodes[nodeIdx], res.keyword, res, localPositions);
+          
+      // Blur teks
+      if (isBlurEnabled) {
+        const parentEl = textNodes[nodeIdx].parentElement;
+        if (parentEl) {
+          applyBlurToElement(parentEl);
+        }
+      }
     });
   });
 }

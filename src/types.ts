@@ -28,6 +28,7 @@ export interface ScanStats {
 
 // Format pertukaran pesan (Message Passing) antara Extension Popup dan Content Script
 export interface ContentMessage {
-  type: 'SCAN_START' | 'SCAN_COMPLETE' | 'SCAN_CLEAR';
+  type: 'SCAN_START' | 'SCAN_COMPLETE' | 'SCAN_CLEAR' | 'SET_BLUR';
   stats?: ScanStats; // Hanya disertakan saat type === 'SCAN_COMPLETE'
+  blurEnabled?: boolean; // Handle blur
 }
