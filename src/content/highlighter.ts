@@ -46,8 +46,6 @@ function createHighlightElement(keyword: string, result: MatchResult): HTMLEleme
   mark.className = HIGHLIGHT_CLASS;
   mark.setAttribute(HIGHLIGHT_ATTR, keyword);
   // simpan data result ke elemen untuk diakses tooltip
-  mark.dataset.algo = result.algorithm;
-  mark.dataset.time = result.executionTime.toString();
   mark.dataset.count = result.count.toString();
   mark.dataset.keyword = keyword;
   return mark;
@@ -61,7 +59,7 @@ export function clearAllHighlights(): void {
     const parent = mark.parentNode;
     if (!parent) return;
     // hapus mark
-    mark.replaceWith(...mark.childNodes);
+    mark.replaceWith(...Array.from(mark.childNodes));
     // satukan teks kembali
     parent.normalize();
   });

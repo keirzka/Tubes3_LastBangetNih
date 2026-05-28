@@ -1,10 +1,11 @@
-// src/algorithms/searchAlgorithm.ts
 import type { MatchResult, ScanStats, Algorithm } from '../types';
 import { loadKeywords } from '../content/keywordLoader';
 import { kmpSearch } from './kmp';
 import { bmSearch } from './bm';
 import { regexSearch } from './regex';
 import { fuzzySearch } from './weightedLevenshtein';
+import { ahoCorasickSearch } from './ahocorasick';
+import { rabinKarpSearch } from './rabinkarp';
 
 export async function searchAlgorithm(text: string): Promise<ScanStats> {
     const keywords = await loadKeywords();    
@@ -12,10 +13,10 @@ export async function searchAlgorithm(text: string): Promise<ScanStats> {
     const results: MatchResult[] = [];
 
     const byAlgorithm: Record<Algorithm, number> = {
-        KMP: 0, BoyerMoore: 0, RegEx: 0, Fuzzy: 0,
+        KMP: 0, BoyerMoore: 0, RegEx: 0, Fuzzy: 0, AhoCorasick: 0, RabinKarp: 0,
     };
     const executionByAlgorithm: Record<Algorithm, number> = {
-        KMP: 0, BoyerMoore: 0, RegEx: 0, Fuzzy: 0,
+        KMP: 0, BoyerMoore: 0, RegEx: 0, Fuzzy: 0, AhoCorasick: 0, RabinKarp: 0,
     };
     const keywordsWithNoExactMatch: string[] = [];
 
@@ -25,47 +26,72 @@ export async function searchAlgorithm(text: string): Promise<ScanStats> {
         const kmpStart = performance.now();
         const kmpResult = kmpSearch(normalizedText, keyword);
         const kmpTime = performance.now() - kmpStart;
+
         // Boyer Moore
         const bmStart = performance.now();
         const bmResult = bmSearch(normalizedText, keyword);
         const bmTime = performance.now() - bmStart;
 
-        if (kmpResult.positions.length > 0) {  //KMP sebagai primary result, harusnya result sama dgn bm
-            results.push({
-                keyword,
-                algorithm: 'KMP',
-                count: kmpResult.positions.length, 
-                positions: kmpResult.positions,
-                executionTime: kmpTime,
-                isFuzzy: false,
-            });
-        }
-
         byAlgorithm['KMP'] += kmpResult.positions.length;
         executionByAlgorithm['KMP'] += kmpTime;
-
-        byAlgorithm['BoyerMoore'] += bmResult.positions.length;        
+        byAlgorithm['BoyerMoore'] += bmResult.positions.length;
         executionByAlgorithm['BoyerMoore'] += bmTime;
 
-        // Catat sbg kandidat fuzzy kalau exact matching tidak menemukan keyword sama sekali
         if (kmpResult.positions.length === 0 && bmResult.positions.length === 0) {
             keywordsWithNoExactMatch.push(keyword);
         }
+
+        if (kmpResult.positions.length > 0) {
+            results.push({
+                keyword,
+                count: kmpResult.positions.length,
+                positions: kmpResult.positions,
+                isFuzzy: false,
+                executionTimes: {
+                    KMP: kmpTime,
+                    BoyerMoore: bmTime,
+                },
+            });
+        }
+    }
+
+    // Aho-Corasick
+    const acStart = performance.now();
+    const acResults = ahoCorasickSearch(normalizedText, keywords);
+    const acTime = performance.now() - acStart;
+
+    for (const keyword of keywords) {
+        byAlgorithm['AhoCorasick'] += acResults.get(keyword)!.positions.length;
+    }
+    executionByAlgorithm['AhoCorasick'] += acTime;
+
+    for (const result of results) {
+        result.executionTimes.AhoCorasick = acTime;
+    }
+
+    // Rabin Karp
+    for (const result of results) {
+        const rkStart = performance.now();
+        const rkResult = rabinKarpSearch(normalizedText, result.keyword);
+        const rkTime = performance.now() - rkStart;
+
+        byAlgorithm['RabinKarp'] += rkResult.positions.length;
+        executionByAlgorithm['RabinKarp'] += rkTime;
+        result.executionTimes.RabinKarp = rkTime;
     }
 
     // Regex matching 
     const regexStart = performance.now();
-    const regexResult = regexSearch(text); 
+    const regexResult = regexSearch(text);
     const regexTime = performance.now() - regexStart;
 
     for (const r of regexResult) {
         results.push({
             keyword: r.matched,
-            algorithm: 'RegEx',
             count: 1,
             positions: [r.index],
-            executionTime: regexTime,
             isFuzzy: false,
+            executionTimes: { RegEx: regexTime },
         });
         byAlgorithm['RegEx'] += 1;
     }
@@ -95,19 +121,16 @@ export async function searchAlgorithm(text: string): Promise<ScanStats> {
         }
 
         for (const [keyword, data] of fuzzyGrouped) {
-            const alreadyExact = results.some(
-                r => r.keyword === keyword && !r.isFuzzy
-            );
+            const alreadyExact = results.some(r => r.keyword === keyword && !r.isFuzzy);
             if (alreadyExact) continue;
 
             results.push({
                 keyword,
-                algorithm: 'Fuzzy',
                 count: data.positions.length,
                 positions: data.positions,
-                executionTime: fuzzyTime,
                 isFuzzy: true,
                 similarity: data.similarity,
+                executionTimes: { Fuzzy: fuzzyTime },
             });
             byAlgorithm['Fuzzy'] += data.positions.length;
         }

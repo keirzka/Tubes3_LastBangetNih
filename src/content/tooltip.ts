@@ -62,7 +62,15 @@ export function showTooltip(event: MouseEvent, result: MatchResult): void {
 
     // algoritma
     const algoEl = document.createElement('div');
-    algoEl.textContent = `Algorithm : ${result.algorithm}`;
+    const t = result.executionTimes;
+    const algoLabels: string[] = [];
+    if (t.KMP !== undefined) algoLabels.push('KMP');
+    if (t.BoyerMoore !== undefined) algoLabels.push('BM');
+    if (t.AhoCorasick !== undefined) algoLabels.push('AC');
+    if (t.RabinKarp !== undefined) algoLabels.push('RK');
+    if (t.RegEx !== undefined) algoLabels.push('RegEx');
+    if (t.Fuzzy !== undefined) algoLabels.push('Fuzzy');
+    algoEl.textContent = `Algorithm : ${algoLabels.join(' | ')}`;
     tooltipEl.appendChild(algoEl);
 
     // count keyword
@@ -70,9 +78,17 @@ export function showTooltip(event: MouseEvent, result: MatchResult): void {
     countEl.textContent = `Count : ${result.count}`;
     tooltipEl.appendChild(countEl);
 
-    // waktu eksekusi
+    // waktu eksekusi per algoritma
+    const fmt = (v?: number) => v !== undefined ? `${(v * 1000).toFixed(3)} µs` : '-';
+    const timeValues: string[] = [];
+    if (t.KMP !== undefined) timeValues.push(fmt(t.KMP));
+    if (t.BoyerMoore !== undefined) timeValues.push(fmt(t.BoyerMoore));
+    if (t.AhoCorasick !== undefined) timeValues.push(fmt(t.AhoCorasick));
+    if (t.RabinKarp !== undefined) timeValues.push(fmt(t.RabinKarp));
+    if (t.RegEx !== undefined) timeValues.push(fmt(t.RegEx));
+    if (t.Fuzzy !== undefined) timeValues.push(fmt(t.Fuzzy));
     const timeEl = document.createElement('div');
-    timeEl.textContent = `Execution Time : ${(result.executionTime * 1000).toFixed(3)} µs`;
+    timeEl.textContent = `Execution Time : ${timeValues.join(' | ')}`;
     tooltipEl.appendChild(timeEl);
 
     // similarity Fuzzy matching (kalau ada)
