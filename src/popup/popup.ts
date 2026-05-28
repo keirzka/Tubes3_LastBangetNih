@@ -1,42 +1,29 @@
-// src/popup/popup.ts
-
 import type { ScanStats, ContentMessage } from '../types';
 import '../styles/popup.css';
 
 declare const chrome: any;
 
-/**
- * Kirim perintah scan ke content script yang sedang aktif di tab ini.
- * Komunikasi popup ↔ content script pakai chrome.tabs.sendMessage.
- */
+
+// Trigger scan ke konten script pada tab aktif
+
 async function triggerScan(): Promise<void> {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   if (!tab.id) return;
   
-  // TODO: kirim message ke content script
-  // Petunjuk: chrome.tabs.sendMessage(tab.id, { type: 'SCAN_START' })
-  // Content script akan balas lewat chrome.runtime.sendMessage
+  // Kirim message ke content script
   chrome.tabs.sendMessage(tab.id, { type: 'SCAN_START' });
 }
 
-/**
- * Render bar chart perbandingan jumlah match antar algoritma.
- * Pakai CSS width % sebagai bar — tidak perlu library chart.
- * 
- * Yang perlu kamu implementasikan:
- * - Hitung nilai maksimum untuk normalisasi lebar bar
- * - Buat elemen bar secara programatik untuk tiap algoritma
- * - Tampilkan label dan angka di samping bar
- */
+
+// Render visualisasi statistik jumlah match setiap algoritma
+
 function renderChart(stats: ScanStats): void {
     const container = document.getElementById('chart-container');
     if (!container) return;
 
-    container.innerHTML = ''; // bersihkan dulu
+    container.innerHTML = ''; 
 
-    // TODO: buat bar chart dari stats.byAlgorithm
-
-    // set nilai tertinggi
+    // set nilai tertinggi untuk batas statistik
     const counts = Object.values(stats.byAlgorithm);
     const maxCount = Math.max(...counts, 0);
 
@@ -74,17 +61,16 @@ function renderChart(stats: ScanStats): void {
     });
 }
 
-/**
- * Render tabel waktu eksekusi per algoritma.
- */
+
+// Render tabel waktu eksekusi setiap algoritma
+
 function renderTiming(stats: ScanStats): void {
-  // TODO: implementasikan
     const container = document.getElementById('table-container');
     if (!container) return;
 
-    container.innerHTML = ''; // bersihkan dulu
+    container.innerHTML = ''; 
 
-    // Buat tabel utama
+    // Create tabel utama
     const table = document.createElement("table");
     table.className = "main-table";
     
@@ -93,7 +79,7 @@ function renderTiming(stats: ScanStats): void {
 
     // Header tabel
     const headerRow = thead.insertRow();
-    const headers = ["Algorithm", "Execution Time (ms)"];
+    const headers = ["Algorithm", "Execution Time (µs)"];
 
     headers.forEach(text => {
       const th = document.createElement("th");
@@ -105,24 +91,52 @@ function renderTiming(stats: ScanStats): void {
     Object.entries(stats.executionByAlgorithm).forEach(([algo, time]) => {
       const row = tbody.insertRow();
       row.insertCell().textContent = algo;
-      row.insertCell().textContent = `${time.toFixed(2)} ms`; 
+      row.insertCell().textContent = `${(time * 1000).toFixed(3)} μs`; 
     });
 
         container.appendChild(table);
     }
 
-/**
- * Update semua UI berdasarkan stats terbaru.
- */
+
+// Update UI terbaru
+
 function updateUI(stats: ScanStats): void {
   const totalEl = document.getElementById('total-count');
-  if (totalEl) totalEl.textContent = `${stats.totalMatches} match ditemukan`;
-  
-  renderChart(stats);
-  renderTiming(stats);
+  const chartSection = document.getElementById('chart-section');
+  const timingSection = document.getElementById('timing-section');
+
+  if (totalEl) {
+    if (stats.totalMatches > 0) {
+      totalEl.textContent = `Total Keyword Matches : ${stats.totalMatches}`;
+      
+      // tampilkan section jika ada hasil match
+      if (chartSection) chartSection.style.display = 'block';
+      if (timingSection) timingSection.style.display = 'block';
+      
+      // Jalankan fungsi render statistik dan tabel
+      renderChart(stats);
+      renderTiming(stats);
+    } else {
+      totalEl.textContent = 'No Match Found';
+      
+      // hide statistik dan tabel jika tidak ada keyword match
+      if (chartSection) chartSection.style.display = 'none';
+      if (timingSection) timingSection.style.display = 'none';
+    }
+  }
 }
 
-// Dengarkan pesan dari content script
+// load dari storage
+async function loadStoredStats(): Promise<void> {
+  const result = await chrome.storage.session.get('lastStats');
+  if (result.lastStats) {
+    updateUI(result.lastStats);
+  }
+}
+
+loadStoredStats();
+
+// terima pesan dari content script
 chrome.runtime.onMessage.addListener((message: ContentMessage) => {
   if (message.type === 'SCAN_COMPLETE' && message.stats) {
     updateUI(message.stats);
@@ -130,9 +144,12 @@ chrome.runtime.onMessage.addListener((message: ContentMessage) => {
 });
 
 // Attach event listener ke tombol
+
+// Scan Page
 document.getElementById('scan-btn')?.addEventListener('click', triggerScan);
+
+// Clear highlight di page
 document.getElementById('clear-btn')?.addEventListener('click', async () => {
-    // TODO: kirim SCAN_CLEAR ke content script
     // cari tab
     const [tab] = await chrome.tabs.query({ 
     active: true, 
@@ -144,11 +161,19 @@ document.getElementById('clear-btn')?.addEventListener('click', async () => {
 
     // clear tooltip dan chart 
     const totalEl = document.getElementById('total-count');
-    if (totalEl) totalEl.textContent = 'no match found';
+    if (totalEl) totalEl.textContent = 'No Match Found';
+
+    const chartSection = document.getElementById('chart-section');
+    const timingSection = document.getElementById('timing-section');
+    
+    if (chartSection) chartSection.style.display = 'none';
+    if (timingSection) timingSection.style.display = 'none';
 
     const chartContainer = document.getElementById('chart-container');
     if (chartContainer) chartContainer.innerHTML = '';
 
     const tableContainer = document.getElementById('table-container');
     if (tableContainer) tableContainer.innerHTML = '';
+
+    await chrome.storage.session.remove('lastStats');
 });

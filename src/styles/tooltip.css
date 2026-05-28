@@ -2,18 +2,20 @@
     position: fixed;
     z-index: 999999;
     pointer-events: none;
-    background-color: #1e1b4b;
-    color: #c4b5fd;
+    background-color: #3f3a42;
+    color: #f5e6eb;
     padding: 8px 12px;
     border-radius: 6px;
     font-size: 12px;
     font-family: sans-serif;
-    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.5), 0 2px 4px -2px rgb(0 0 0 / 0.3);
+    border: 1px solid #db2777;
     display: none;
 }
 
 #judol-tooltip h3{
     margin: 0 0 4px;
-    color: #a78bfa;
+    color: #f472b6;
     font-weight: bold;
+    font-size: 14px;
 }

@@ -1,10 +1,10 @@
 // src/algorithms/searchAlgorithm.ts
-import { MatchResult, ScanStats, Algorithm } from '../types';
+import type { MatchResult, ScanStats, Algorithm } from '../types';
 import { loadKeywords } from '../content/keywordLoader';
 import { kmpSearch } from './kmp';
 import { bmSearch } from './bm';
 import { regexSearch } from './regex';
-import { fuzzySearch, THRESHOLD } from './weightedLevenshtein';
+import { fuzzySearch } from './weightedLevenshtein';
 
 export async function searchAlgorithm(text: string): Promise<ScanStats> {
     const keywords = await loadKeywords();    

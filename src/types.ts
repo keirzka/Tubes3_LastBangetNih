@@ -1,4 +1,3 @@
-// src/types.ts
 // File ini milik bersama — jangan diubah sepihak tanpa diskusi tim
 
 export type Algorithm = 'KMP' | 'BoyerMoore' | 'RegEx' | 'Fuzzy';

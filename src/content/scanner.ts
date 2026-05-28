@@ -3,15 +3,9 @@
 import type { ScanStats } from '../types';
 import { highlightTextNode } from './highlighter';
 
-/**
- * Kumpulkan semua text node yang relevan dari DOM.
- * Mengembalikan dua hal: array text node, dan string teks gabungan seluruh halaman.
- * 
- * Mengapa kita butuh keduanya?
- * - textNodes: dipakai untuk memanggil highlightTextNode (butuh node asli)
- * - fullText: dipakai oleh Orang A untuk menjalankan algoritma matching di atasnya
- *   (KMP, BM, RegEx semuanya bekerja pada string biasa, bukan DOM)
- */
+
+// Scan semua text node dari DOM, return array text node untuk highlight dan teks gabungan seluruh page untuk algoritma matching
+
 export function collectTextNodes(): { textNodes: Text[]; fullText: string; nodeOffsets: number[] } {
   const textNodes: Text[] = [];
   const nodeOffsets: number[] = [];
@@ -57,14 +51,9 @@ export function collectTextNodes(): { textNodes: Text[]; fullText: string; nodeO
   return { textNodes, fullText, nodeOffsets };
 }
 
-/**
- * Setelah Orang A menjalankan algoritma dan menghasilkan ScanStats,
- * fungsi ini memetakan setiap posisi match ke text node yang tepat,
- * lalu memanggil highlightTextNode.
- * 
- * Inilah "jembatan" antara dunia algoritma string (Orang A)
- * dengan dunia DOM manipulation (kamu, Orang B).
- */
+
+// Memetakan setiap posisi match ke text node yang tepat untuk highlight
+
 export function applyHighlights(
   stats: ScanStats,
   textNodes: Text[],
@@ -72,9 +61,7 @@ export function applyHighlights(
   fullText: string
 ): void {
   stats.results.forEach((res) => {
-    // Kumpulkan dulu semua localPosition per node untuk keyword ini
-    // Kenapa dikumpulkan dulu? Karena highlightTextNode harus menerima
-    // semua posisi dalam satu node sekaligus (untuk diproses mundur/reverse)
+    // simpan semua posisi node untuk keyword ini
     const positionsPerNode = new Map<number, number[]>();
 
     res.positions.forEach((pos) => {
@@ -117,11 +104,9 @@ export function applyHighlights(
   });
 }
 
-/**
- * Getter untuk fullText — dipakai Orang A saat integrasi.
- * Orang A akan memanggil fungsi ini untuk mendapatkan teks halaman,
- * lalu menjalankan KMP/BM/RegEx di atasnya.
- */
+
+// Getter untuk fullTextn untuk passing full text ke algoritma
+
 export function getFullPageText(): { textNodes: Text[]; fullText: string; nodeOffsets: number[] } {
   return collectTextNodes();
 }
