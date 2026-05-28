@@ -33,7 +33,7 @@ const VISUAL_PAIRS = new Set<string>([
 
 function subCost(a: string, b: string): number{
     if (a == b) return 0;
-    const key = '${a}|${b}';
+    const key = `${a}|${b}`;
     if (VISUAL_PAIRS.has(key)) return VISUAL_SUB_COST;
     else return NORMAL_SUB_COST;
 }
