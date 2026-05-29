@@ -23,9 +23,9 @@ async function triggerScan(): Promise<void> {
     if (result.lastStats) {
       clearInterval(poll);
       updateUI(result.lastStats);
-    } else if (Date.now() - startTime > 120000) {
+    } else if (Date.now() - startTime > 600000) {
       clearInterval(poll);
-      if (totalEl) totalEl.textContent = 'Scan timeout';
+      if (totalEl) totalEl.textContent = 'Scan time out';
     }
   }, 500);
 }

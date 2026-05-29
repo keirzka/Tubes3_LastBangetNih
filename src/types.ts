@@ -2,6 +2,7 @@ export type Algorithm = 'KMP' | 'BoyerMoore' | 'RegEx' | 'Fuzzy' | 'AhoCorasick'
 
 export interface MatchResult {
   keyword: string;
+  matchedToken?: string;
   count: number;
 
   positions: number[];

@@ -7,6 +7,29 @@ import { fuzzySearch } from './weightedLevenshtein';
 import { ahoCorasickSearch } from './ahocorasick';
 import { rabinKarpSearch } from './rabinkarp';
 
+function kmpFindAll(text: string, pattern: string): number[] {
+    const positions: number[] = [];
+    if (pattern.length === 0 || pattern.length > text.length) return positions;
+
+    const lps = new Array<number>(pattern.length).fill(0);
+    let len = 0, i = 1;
+    while (i < pattern.length) {
+        if (pattern[i] === pattern[len]) { lps[i] = ++len; i++; }
+        else { len === 0 ? i++ : (len = lps[len - 1]); }
+    }
+
+    let it = 0, ip = 0;
+    while (it < text.length) {
+        if (pattern[ip] === text[it]) { ip++; it++; }
+        else { ip === 0 ? it++ : (ip = lps[ip - 1]); }
+        if (ip === pattern.length) {
+            positions.push(it - ip);
+            ip = lps[ip - 1];
+        }
+    }
+    return positions;
+}
+
 export async function searchAlgorithm(text: string): Promise<ScanStats> {
     const keywords = await loadKeywords();    
     const normalizedText = text.toLowerCase();
@@ -130,24 +153,15 @@ export async function searchAlgorithm(text: string): Promise<ScanStats> {
             const alreadyExact = results.some(r => r.keyword === keyword && !r.isFuzzy);
             if (alreadyExact) continue;
 
-            const token = data.token;
-            const tokenPositions: number[] = [];
-            let searchFrom = 0;
-            while (true) {
-                const idx = normalizedText.indexOf(token, searchFrom);
-                if (idx === -1) break;
-                tokenPositions.push(idx);
-                searchFrom = idx + 1;
-            }
+            const tokenPositions = kmpFindAll(normalizedText, data.token);
 
-            console.log();
+            console.log(`[Fuzzy] "${keyword}" <- token:"${data.token}" sim:${data.similarity.toFixed(3)} pos:[${tokenPositions}]`);
 
             if (tokenPositions.length === 0) continue;
 
-            console.log(`[Fuzzy] "${keyword}" <- token:"${token}" sim:${data.similarity.toFixed(3)} pos:[${tokenPositions}]`);
-
             results.push({
-                keyword: token,
+                keyword,
+                matchedToken: data.token,
                 count: tokenPositions.length,
                 positions: tokenPositions,
                 isFuzzy: true,

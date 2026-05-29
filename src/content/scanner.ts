@@ -4,6 +4,48 @@ import { applyBlurToElement } from './blurCensor';
 
 declare const chrome: any;
 
+function collectAllTextNodes(): { textNodes: Text[]; fullText: string; nodeOffsets: number[] } {
+  const textNodes: Text[] = [];
+  const nodeOffsets: number[] = [];
+  let fullText = '';
+
+  const walker = document.createTreeWalker(
+    document.body,
+    NodeFilter.SHOW_TEXT,
+    {
+      acceptNode: (node) => {
+        const parent = node.parentNode as HTMLElement;
+        const tag = parent?.nodeName;
+
+        if (tag === 'SCRIPT' || tag === 'STYLE' || tag === 'NOSCRIPT') {
+          return NodeFilter.FILTER_REJECT;
+        }
+
+        if (parent?.id === 'judol-tooltip') {
+          return NodeFilter.FILTER_REJECT;
+        }
+
+        if (!node.textContent?.trim()) {
+          return NodeFilter.FILTER_SKIP;
+        }
+
+        return NodeFilter.FILTER_ACCEPT;
+      },
+    }
+  );
+
+  let current = walker.nextNode();
+  while (current) {
+    const node = current as Text;
+    nodeOffsets.push(fullText.length);
+    fullText += node.textContent ?? '';
+    textNodes.push(node);
+    current = walker.nextNode();
+  }
+
+  return { textNodes, fullText, nodeOffsets };
+}
+
 export function collectTextNodes(): { textNodes: Text[]; fullText: string; nodeOffsets: number[] } {
   const textNodes: Text[] = [];
   const nodeOffsets: number[] = [];
@@ -84,7 +126,7 @@ export async function applyHighlights(
       });
 
       positionsPerNode.forEach((localPositions, nodeIdx) => {
-        highlightTextNode(nodes[nodeIdx], res.keyword, res, localPositions);
+        highlightTextNode(nodes[nodeIdx], res.matchedToken ?? res.keyword, res, localPositions);
         if (isBlurEnabled) {
           const parentEl = nodes[nodeIdx].parentElement;
           if (parentEl) applyBlurToElement(parentEl);
@@ -98,22 +140,8 @@ export async function applyHighlights(
 
   const fuzzyResults = stats.results.filter(r => r.isFuzzy);
   if (fuzzyResults.length > 0) {
-    const { textNodes: newNodes, fullText: newText, nodeOffsets: newOffsets } = collectTextNodes();
-    const newTextLower = newText.toLowerCase();
-
-    const fuzzyWithNewPositions = fuzzyResults.map(res => {
-      const newPositions: number[] = [];
-      let searchFrom = 0;
-      while (true) {
-        const idx = newTextLower.indexOf(res.keyword, searchFrom);
-        if (idx === -1) break;
-        newPositions.push(idx);
-        searchFrom = idx + 1;
-      }
-      return { ...res, positions: newPositions };
-    }).filter(res => res.positions.length > 0);
-
-    highlightResults(fuzzyWithNewPositions, newNodes, newOffsets, newText);
+    const { textNodes: newNodes, fullText: newText, nodeOffsets: newOffsets } = collectAllTextNodes();
+    highlightResults(fuzzyResults, newNodes, newOffsets, newText);
   }
 }
 
