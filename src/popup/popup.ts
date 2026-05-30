@@ -106,7 +106,7 @@ function updateUI(stats: ScanStats): void {
   const timingSection = document.getElementById('timing-section');
 
   if (totalEl) {
-    if (stats.totalMatches > 0) {
+    if (stats.totalMatches >= 0) {
       totalEl.textContent = `Total Keyword Matches : ${stats.totalMatches}`;
       
       // tampilkan section jika ada hasil match
