@@ -63,7 +63,12 @@ export async function applyHighlights(
   const storage = await chrome.storage.local.get('blurEnabled');
   const isBlurEnabled = !!storage.blurEnabled;
 
-  stats.results.forEach((res) => {
+  // urutkan prioritas dari keyword terpanjang ditemukan
+  const sortedResults = [...stats.results].sort(
+    (a, b) => b.keyword.length - a.keyword.length
+  );
+  
+  sortedResults.forEach((res) => {
     // simpan semua posisi node untuk keyword ini
     const positionsPerNode = new Map<number, number[]>();
 
