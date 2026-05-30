@@ -82,7 +82,7 @@ export interface FuzzyMatch{
 // pecah teks jd kata"
 function tokenize(text: string): Array<{token: string; index: number}>{
     const tokens: Array<{token:string; index:number}> = [];
-    const re = /\S+/g;
+    const re = /[a-zA-Z0-9\u00C0-\u024F\u0370-\u03FF\u0400-\u04FF]+/g;
     let m: RegExpExecArray | null;
     while ((m = re.exec(text)) != null){
         tokens.push({token:m[0].toLowerCase(), index:m.index});
